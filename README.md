@@ -37,6 +37,13 @@ o.bind("SUPER + CTRL + ALT + A", "Lab agent", "/home/YOU/.config/omarchy/plugins
 
 Reload Hyprland (`hyprctl reload`) and check `hyprctl configerrors`.
 
+The chord restores `golden`, then opens the host agent with a **kernel lock**:
+bubblewrap makes `~/.config/hypr`, `~/.config/omarchy`, `/usr/share/omarchy`,
+and stock terminal configs read-only for that window. Switching Ask → Agent
+does not unlock them. `incus exec` still works. Apply live-desktop edits from
+Super+Shift+Ctrl+A after you agree. Crash-toast `--prompt` uses the same lock
+via `~/.local/bin/omarchy-agent`. The YOLO agent key is unchanged.
+
 Left click the bar icon for the panel. Right click restores golden and opens
 the host agent. Middle click refreshes status.
 
@@ -92,6 +99,88 @@ the scripts re-exec with `newgrp` as `sg`.
 
 Never bind-mount `$HOME`, `~/.ssh`, or sockets into the guest. Never push
 Cursor/MCP/token paths.
+
+## Uninstall
+
+Install is two layers. The plugin is QML and scripts under
+`~/.config/omarchy/plugins/`. Incus is a **system** daemon, a VM, a network,
+and a group. Neither layer tears down the other.
+
+`omarchy plugin remove` only deletes the clone. It does not stop
+`incus.service`, delete `omarchy-lab`, or drop `incus-admin`. Leave the VM
+running (or `boot.autostart=true`) and it comes back at **boot**, not at
+Hyprland login. Leave `incus.socket` enabled and the bar widget’s 15s
+`incus info` poll will **socket-activate** the daemon shortly after you sit
+down.
+
+Do the desktop side first so nothing keeps poking the socket.
+
+### 1. Plugin (bar, scripts, keybind)
+
+```sh
+omarchy plugin remove keri.incus-lab
+```
+
+That disables the plugin, takes `keri.incus-lab` off the bar (disabling a
+widget removes its layout entry), deletes
+`~/.config/omarchy/plugins/keri.incus-lab/`, and rescans the shell.
+
+If you added the optional chord, remove it from `~/.config/hypr/bindings.lua`,
+then `hyprctl reload` and `hyprctl configerrors`. A leftover bind still tries
+to exec `scripts/lab-agent.sh` after the clone is gone.
+
+If you added PATH wrappers that `exec` this plugin (`omarchy-lab-agent`,
+`omarchy-desktop-lock`, or an `omarchy-agent` that requires
+`desktop-lock.sh` for `--prompt`), remove or retarget those too. Crash-toast
+`--prompt` that refuses to run unlocked will start failing once the lock
+script is missing.
+
+### 2. Lab VM (the 4GiB)
+
+```sh
+incus stop omarchy-lab
+incus delete omarchy-lab
+incus network delete labnet   # only if nothing else uses it
+```
+
+Why: `incusd` restores last instance state when it starts. Deleting the
+plugin does not stop the guest. Skip `network delete` if you still use
+`labnet`.
+
+If you only want it off at boot and will keep the lab:
+
+```sh
+incus config set omarchy-lab boot.autostart=false
+incus stop omarchy-lab
+```
+
+### 3. Incus daemon (boot, not login)
+
+Omarchy does not start Incus. `incus.service` is `WantedBy=multi-user.target`.
+
+```sh
+sudo systemctl disable --now incus.service
+sudo systemctl disable --now incus.socket
+```
+
+Disable **both**. Socket-only still starts the daemon on first client connect.
+Use `sudo` in a terminal (password prompt). Start it later with
+`sudo systemctl start incus.service` when you want the lab again.
+
+If UFW got extra forward allows for `incusbr0` during first setup, delete
+those by rule **text**, not number (`sudo ufw status`, then `sudo ufw delete
+…`). Isolation onto `labnet` does not remove those holes by itself.
+
+### 4. Packages and group (only if Incus is otherwise unused)
+
+```sh
+sudo gpasswd -d "$USER" incus-admin
+sudo pacman -Rns incus edk2-ovmf
+```
+
+Skip this if you have other instances. Dropping the group needs a new login
+to take effect. Removing the package does not wipe `/var/lib/incus`; delete
+that only if you intend to destroy all Incus data.
 
 ## Local development
 
