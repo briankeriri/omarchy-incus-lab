@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "keri.incus-lab",
   "name": "Incus Lab",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": "keri",
   "license": "MIT",
   "description": "Bar widget for an isolated Incus VM lab: status, restore the golden snapshot, and open the host coding agent against it. Does not install Incus or edit packaged Omarchy.",

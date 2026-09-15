@@ -72,7 +72,9 @@ prompt=$(
 Lab instance ${instance} is running from snapshot ${snapshot}.
 
 Diagnose on the host. Reproduce and try fixes with: incus exec ${instance} -- …
-Do not edit live ~/.config/hypr or /usr/share/omarchy.
+Live ~/.config/hypr, ~/.config/omarchy, and /usr/share/omarchy are kernel
+read-only in this window (bubblewrap). Switching to Agent mode does not
+unlock them. Apply host edits only from Super+Shift+Ctrl+A after a yes.
 EOF
 )
 
@@ -81,10 +83,14 @@ if [[ ${OMARCHY_LAB_SKIP_AGENT:-} == 1 ]]; then
   exit 0
 fi
 
-if [[ -x $agent_wrapper ]]; then
-  exec /usr/bin/omarchy-launch-tui --app-id=org.omarchy.agent-lab \
-    "$agent_wrapper" --inline --prompt "$prompt"
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+inner=$script_dir/lab-agent-inner.sh
+if [[ ! -x $inner ]]; then
+  say "lab-agent-inner.sh is missing. Lab will not start an unlocked agent."
+  exit 1
 fi
+export OMARCHY_AGENT_WRAPPER="$agent_wrapper"
+export OMARCHY_LAB_AGENT=1
 
 exec /usr/bin/omarchy-launch-tui --app-id=org.omarchy.agent-lab \
-  omarchy-agent --inline --prompt "$prompt"
+  "$inner" --inline --prompt "$prompt"
