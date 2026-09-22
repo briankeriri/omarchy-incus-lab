@@ -1,4 +1,4 @@
-# Incus Lab
+# Omarchy Incus Lab
 
 An [Omarchy](https://omarchy.org/) **bar widget** for a lab you already built with [Incus](https://linuxcontainers.org/incus/).
 
