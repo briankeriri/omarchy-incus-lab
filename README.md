@@ -18,7 +18,7 @@ Version: 0.1.1
 - You run Omarchy (or another desktop that already has `omarchy-shell` and this plugin API).
 - You already have — or are willing to build by hand — an Incus **virtual machine** named `omarchy-lab`, a snapshot named `golden`, and an isolated Incus network named `labnet` or `isolated`.
 - You want a bar status light and one-click **restore snapshot**.
-- You want a coding agent on **this computer** that can `incus exec` into the guest, while `~/.config/hypr`, `~/.config/omarchy`, and `/usr/share/omarchy` stay read-only in that agent window.
+- You want a coding agent on **hot computer** that can `incus exec` into the guest, while `~/.config/hypr`, `~/.config/omarchy`, and `/usr/share/omarchy` stay read-only in that agent window.
 - You are fine with the guest having **no internet**. Packages are downloaded on the host and copied in.
 
 **Do not use it if you wanted any of these:**
